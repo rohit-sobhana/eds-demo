@@ -21,16 +21,15 @@ import ProductAttributes from '@dropins/storefront-pdp/containers/ProductAttribu
 import ProductGallery from '@dropins/storefront-pdp/containers/ProductGallery.js';
 
 // Libs
-import { setJsonLd } from '../../scripts/commerce.js';
-import { fetchPlaceholders } from '../../scripts/aem.js';
+import { fetchPlaceholders, setJsonLd } from '../../scripts/commerce.js';
 
 // Initializers
 import { IMAGES_SIZES } from '../../scripts/initializers/pdp.js';
 import '../../scripts/initializers/cart.js';
+import { rootLink } from '../../scripts/scripts.js';
 
 export default async function decorate(block) {
-  // eslint-disable-next-line no-underscore-dangle
-  const product = events._lastEvent?.['pdp/data']?.payload ?? null;
+  const product = events.lastPayload('pdp/data') ?? null;
   const labels = await fetchPlaceholders();
 
   // Layout
@@ -227,17 +226,13 @@ export default async function decorate(block) {
   }, { eager: true });
 
   // Set JSON-LD and Meta Tags
-  events.on(
-    'eds/lcp',
-    () => {
-      if (product) {
-        setJsonLdProduct(product);
-        setMetaTags(product);
-        document.title = product.name;
-      }
-    },
-    { eager: true },
-  );
+  events.on('aem/lcp', () => {
+    if (product) {
+      setJsonLdProduct(product);
+      setMetaTags(product);
+      document.title = product.name;
+    }
+  }, { eager: true });
 
   return Promise.resolve();
 }
@@ -297,9 +292,9 @@ async function setJsonLdProduct(product) {
       '@type': 'Brand',
       name: brand?.value,
     },
-    url: new URL(`/products/${urlKey}/${sku}`, window.location),
+    url: new URL(rootLink(`/products/${urlKey}/${sku}`), window.location),
     sku,
-    '@id': new URL(`/products/${urlKey}/${sku}`, window.location),
+    '@id': new URL(rootLink(`/products/${urlKey}/${sku}`), window.location),
   };
 
   if (variants.length > 1) {
